@@ -124,7 +124,7 @@ public class Sample16BitALUTest {
 
   @Test
   public void ltUnsigned_allPairs() {
-    long[] values = {0, 1, 2, 65534, 65535};
+    long[] values = {0, 1, 2, 32767, 32768, 65534, 65535};
     for (long a : values) {
       for (long b : values) {
         verifyUnsigned(a, b, true);
