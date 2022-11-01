@@ -1,17 +1,14 @@
 import org.junit.Assert;
 import org.junit.Test;
 import java.util.function.BiFunction;
+import java.lang.Math;
 
 import static edu.gvsu.dlunit.DLUnit.*;
 
 /**
- * Test cases for a signed 16-bit ALU.
- * <p>
- * IMPORTANT:  These test cases do *not* thoroughly test the circuit.  You need to
- * re-name this class and add more tests!
- * <p>
- * <p>
- * Created by kurmasz on 8/8/16.
+ *
+ * Group Members: Jochen Tamang
+ *
  */
 public class Sample16BitALUTest {
 
@@ -28,8 +25,8 @@ public class Sample16BitALUTest {
     public static final int SUB  = 9;
     public static final int SLT  = 15;
   }
-
-
+//  public static final long testIntegers[] = {-32768, -32767,-16384,-17,-16,-3,-2,-1, 0, 1, 2, 13, 127, 128, 129, 8000, 16000, 0x5555, 32766, 32767};
+  // Helper method that runs a test for a given pair of integers and an operation (`false` for add, `true` for subtract)
   @Test
   public void testAddu() {
     setPinUnsigned("InputA", 53400);
@@ -132,6 +129,10 @@ public class Sample16BitALUTest {
     }
   }
 
+  /**
+   * AND, OR, NOT, XOR
+   */
+
   private void verifyLogic(String name, int op, long a, long b, BiFunction<Long, Long, Long> func) {
     setPinUnsigned("InputA", a);
     setPinUnsigned("InputB", b);
@@ -147,10 +148,46 @@ public class Sample16BitALUTest {
     verifyLogic("and", OpCodes.AND, 0xFF00, 0x0F0F, (a, b) -> a & b);
   }
 
+  @Test
+  public void testOr() {
+    verifyLogic("or", OpCodes.OR,0xFF00,0x0F0F, (a,b) -> a | b );
+  }
+
   @Test // The mask in the lambda sets bits above 16 to 0 so that Java effectively treats all results as unsigned
   public void testNot() {
     verifyLogic("not", OpCodes.NOT, 0x1, 0x0F0F, (a, b) -> (~a) & 0xFFFF);
   }
+
+  @Test
+  public void testXor() {
+    verifyLogic("xor", OpCodes.XOR, 0x1, 0x0F0F, (a, b) -> (a | b) & (~a | ~b));
+  }
+
+
+  /**
+   * Load Upper Immediate
+   **/
+  private void verifyLUI( long a )
+  {
+    setPinUnsigned("InputA", a);
+    setPinUnsigned("Op", OpCodes.LUI);
+    run();
+    //shifting 8 bit is same as multiplying by 2^8
+    Assert.assertEquals("Load Upper Immediate Output", (long) ((a*Math.pow(2,8)) % 65536), readPinUnsigned("Output"));
+    Assert.assertEquals("Load Upper Immediate Overflow", false, readPin("Overflow"));
+  }
+
+  @Test
+  public void LUIpairs()
+  {
+    long[] values = {0, 1, 2, 9,16,30, 32767, 32768};
+    for(long a: values)
+    {
+      verifyLUI(a);
+    }
+
+  }
+
 
 
 }
