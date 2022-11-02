@@ -25,7 +25,81 @@ public class Sample16BitALUTest {
     public static final int SUB  = 9;
     public static final int SLT  = 15;
   }
-//  public static final long testIntegers[] = {-32768, -32767,-16384,-17,-16,-3,-2,-1, 0, 1, 2, 13, 127, 128, 129, 8000, 16000, 0x5555, 32766, 32767};
+
+  /**
+   * Used for signed and unsigned operators
+   */
+  public static final long testSigned[] = {-32768, -32767,-16384,-17,-16,-3,-2,-1, 0, 1, 2, 13, 127, 128, 129, 8000, 16000, 0x5555, 32766, 32767};
+  public static final long testUnSigned[] = { 0, 1, 2, 13, 127, 128, 129, 8000, 16000, 0x5555, 32766, 32767,65534, 65535};
+
+  private void verifyAddSubtractSigned(long a, long b, int op)
+  {
+    long expected;
+    if(op == 8)
+    {
+      expected = a + b;
+    }
+    else
+    {
+      expected = a-b;
+    }
+    // add or subtract as specified by `op`
+
+    boolean expectedOverflow = ((expected >= (1 << 15)) || (expected < -(1 << 15)));
+    if (expectedOverflow && expected > 0) {
+      expected -= 65536;
+    } else if (expectedOverflow && expected < 0) {
+      expected += 65536;
+    }
+    setPinSigned("InputA", a);
+    setPinSigned("InputB", b);
+    setPinUnsigned("Op", op);
+    run();
+    Assert.assertEquals("Output ", expected, readPinSigned("Output"));
+    Assert.assertEquals("Overflow " , expectedOverflow, readPin("Overflow"));
+  }
+  @Test
+  public void testAddSubSigned() {
+    for (long a : testSigned) {
+      for (long b : testSigned) {
+        verifyAddSubtractSigned(a, b, OpCodes.ADD);
+        verifyAddSubtractSigned(a, b, OpCodes.SUB);
+      }
+    }
+  }
+
+  private void verifyAddSubtractUnsigned(long a, long b, int op)
+  {
+    long expected;
+    boolean operation;
+    if(op == 0)
+    {
+      expected = (a + b) % 65536;
+      operation = false;
+    }
+    else {
+      expected = Math.floorMod(a - b, 65536);
+      operation = true;
+    }
+
+    setPinUnsigned("InputA", a);
+    setPinUnsigned("InputB", b);
+    setPinUnsigned("Op", op);
+    run();
+    String message = "of " + a + (operation ? " - " : " + ") + b + ": ";
+    Assert.assertEquals("Output " + message , expected, readPinUnsigned("Output"));
+    Assert.assertEquals("Overflow " , false, readPin("Overflow"));
+  }
+  @Test
+  public void testAddSubUnsigned() {
+    for (long a : testUnSigned) {
+      for (long b : testUnSigned) {
+        verifyAddSubtractUnsigned(a, b, OpCodes.ADDU);
+        verifyAddSubtractUnsigned(a, b, OpCodes.SUBU);
+      }
+    }
+  }
+
   // Helper method that runs a test for a given pair of integers and an operation (`false` for add, `true` for subtract)
   @Test
   public void testAddu() {
@@ -94,7 +168,9 @@ public class Sample16BitALUTest {
     }
   }
 
-
+  /**
+   * SLTu and SLT
+   */
   @Test
   public void ltSigned_allPairs() {
     long[] values = {-32768, -32767, -1, 0, 1, 32766, 32767};
@@ -121,7 +197,7 @@ public class Sample16BitALUTest {
 
   @Test
   public void ltUnsigned_allPairs() {
-    long[] values = {0, 1, 2, 32767, 32768, 65534, 65535};
+    long[] values = {0, 1, 2, 16, 20, 32767, 32768, 65534, 65535};
     for (long a : values) {
       for (long b : values) {
         verifyUnsigned(a, b, true);
